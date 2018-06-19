@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace WeatherApi.Models
+namespace WeatherAPI.Models
 {
     /// <summary>
     ///     Represents Weather Model

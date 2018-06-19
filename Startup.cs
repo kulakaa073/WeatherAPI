@@ -1,17 +1,32 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using System;
 using System.IO;
 using System.Reflection;
+using WeatherAPI.Models;
 
-namespace WeatherApi
+namespace WeatherAPI
 {
+    #region Startup
     public class Startup
     {
+        public IConfiguration AppConfiguration { get; private set; }
+
+        public Startup(IConfiguration configuration)
+        {
+            AppConfiguration = configuration;
+        }
+        #endregion
+
         #region snippet_ConfigureServices
         public void ConfigureServices(IServiceCollection services)
         {
+            // Register configuration
+            services.AddOptions();
+            services.Configure<WeatherAPISettings>(AppConfiguration.GetSection("security"));
+
             services.AddMvc();
 
             // Register the Swagger generator, defining 1 or more Swagger documents
@@ -30,6 +45,7 @@ namespace WeatherApi
                 var xmlFile = "WeatherAPI.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 options.IncludeXmlComments(xmlPath);
+                options.DescribeAllEnumsAsStrings();
             });
         }
         #endregion

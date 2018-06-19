@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using Microsoft.Extensions.Options;
 using System;
-using WeatherApi.Models;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using WeatherAPI.Models;
 
-namespace WeatherApi.Controllers
+namespace WeatherAPI.Controllers
 {
     #region snippet_Controller
     /// <summary>
@@ -15,6 +16,12 @@ namespace WeatherApi.Controllers
     [Route("api/[controller]")]
     public class WeatherAPIController : ControllerBase
     {
+        private readonly WeatherAPISettings _weatherAPISettings;
+
+        public WeatherAPIController(IOptions<WeatherAPISettings> weatherAPISettings)
+        {
+            _weatherAPISettings = weatherAPISettings.Value;
+        }
         #endregion
 
         #region snippet_GetWeather
@@ -31,7 +38,9 @@ namespace WeatherApi.Controllers
                 try
                 {
                     client.BaseAddress = new Uri("http://api.openweathermap.org");
-                    var response = await client.GetAsync($"/data/2.5/weather?q={city}&appid=f1fc6c59c426736623261ddb6fb0d5cd&units=metric");
+                    var appId = _weatherAPISettings.appId;
+                    var response = await client.GetAsync($"/data/2.5/weather?q={city}&appid={appId}&units=metric");
+
                     response.EnsureSuccessStatusCode();
 
                     var stringResult = await response.Content.ReadAsStringAsync();
@@ -67,7 +76,9 @@ namespace WeatherApi.Controllers
                 try
                 {
                     client.BaseAddress = new Uri("http://api.openweathermap.org");
-                    var response = await client.GetAsync($"/data/2.5/weather?q={city}&appid=f1fc6c59c426736623261ddb6fb0d5cd&units=metric");
+                    var appId = _weatherAPISettings.appId;
+                    var response = await client.GetAsync($"/data/2.5/forecast?q={city}&appid={appId}&units=metric");
+
                     response.EnsureSuccessStatusCode();
 
                     var stringResult = await response.Content.ReadAsStringAsync();
