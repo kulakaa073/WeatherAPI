@@ -13,7 +13,7 @@ namespace WeatherApi.Controllers
     ///     Represents Weather controler
     /// </summary>
     [Route("api/[controller]")]
-    class WeatherAPIController : ControllerBase
+    public class WeatherAPIController : ControllerBase
     {
         #endregion
 
