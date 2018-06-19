@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using System;
 using System.IO;
-using System.Reflection;
 using WeatherAPI.Models;
 
 namespace WeatherAPI

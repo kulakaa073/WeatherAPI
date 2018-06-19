@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using WeatherAPI.Models;
 
 namespace WeatherAPI.Controllers
@@ -13,7 +13,7 @@ namespace WeatherAPI.Controllers
     /// <summary>
     ///     Represents Weather controler
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class WeatherAPIController : ControllerBase
     {
         private readonly WeatherAPISettings _weatherAPISettings;
@@ -29,14 +29,32 @@ namespace WeatherAPI.Controllers
         /// Get current weather for specific city
         /// </summary>
         /// <param name="city"></param> 
+        /// <returns>Current weather in city</returns>
+        /// <response code="200">Return current weather</response>
+        /// <response code="204">Data error</response>
+        /// <response code="400">Bad request</response> 
         [HttpGet]
-        [Route("api/getweather")]
+        [Route("GetWeather")]
+        [Produces("application/json", Type = typeof(Weather))]
+        [ProducesResponseType(typeof(Weather), 200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> GetWeather(string city)
         {
+            try
+            {
+                // Validate city name field
+                Utils.Utils.ValidateCityName(city);
+            }
+            catch (Exception exception)
+            {
+                return BadRequest($"Error: {exception.Message}");
+            }
             using (var client = new HttpClient())
             {
                 try
                 {
+                    // Building request url
                     client.BaseAddress = new Uri("http://api.openweathermap.org");
                     var appId = _weatherAPISettings.appId;
                     var response = await client.GetAsync($"/data/2.5/weather?q={city}&appid={appId}&units=metric");
@@ -44,22 +62,31 @@ namespace WeatherAPI.Controllers
                     response.EnsureSuccessStatusCode();
 
                     var stringResult = await response.Content.ReadAsStringAsync();
+
+                    //Parsing request result and building weather object
                     JObject fullWeather = JObject.Parse(stringResult);
-                    Weather weather = new Weather
+                    try
                     {
-                        Date = Convert.ToDateTime(fullWeather["dt"]),
-                        Temp = (double)fullWeather["dt"]["temp"],
-                        WindSpeed = (double)fullWeather["wind"]["speed"],
-                        Clouds = (string)fullWeather["clouds"]["all"]
-                    };
-                    return Ok(weather);
+                        Weather weather = new Weather
+                        {
+                            Date = Utils.Utils.UnixTimeStampToDateTime((double)fullWeather["dt"]),
+                            Temp = (double)fullWeather["main"]["temp"],
+                            WindSpeed = (double)fullWeather["wind"]["speed"],
+                            Clouds = (string)fullWeather["clouds"]["all"]
+                        };
+                        return Ok(weather);
+                    }
+                    catch
+                    {
+                        return NoContent();
+                    }
                 }
                 catch (HttpRequestException httpRequestException)
                 {
                     return BadRequest($"Error getting weather from OpenWeather: {httpRequestException.Message}");
                 }
             }
-        }
+            }
         #endregion
 
         #region snippet_GetWeatherForecast
@@ -67,14 +94,32 @@ namespace WeatherAPI.Controllers
         /// Get forecast for specific city
         /// </summary>
         /// <param name="city"></param> 
+        /// <returns>Current weather in city</returns>
+        /// <response code="200">Return current weather</response>
+        /// <response code="204">Data error</response>
+        /// <response code="400">Bad request</response> 
         [HttpGet]
-        [Route("api/getforecast")]
+        [Route("GetForecast")]
+        [Produces("application/json", Type = typeof(Weather))]
+        [ProducesResponseType(typeof(Weather), 200)]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
         public async Task<IActionResult> GetForecast(string city)
         {
+            try
+            {
+                // Validate city name field
+                Utils.Utils.ValidateCityName(city);
+            }
+            catch (Exception exception)
+            {
+                return BadRequest($"Error: {exception.Message}");
+            }
             using (var client = new HttpClient())
             {
                 try
                 {
+                    // Building request url
                     client.BaseAddress = new Uri("http://api.openweathermap.org");
                     var appId = _weatherAPISettings.appId;
                     var response = await client.GetAsync($"/data/2.5/forecast?q={city}&appid={appId}&units=metric");
@@ -82,20 +127,29 @@ namespace WeatherAPI.Controllers
                     response.EnsureSuccessStatusCode();
 
                     var stringResult = await response.Content.ReadAsStringAsync();
+
+                    //Parsing request result and building weather object
                     JObject fullWeather = JObject.Parse(stringResult);
                     List<Weather> weatherForecast = new List<Weather>();
-                    foreach (var timePeriod in fullWeather["list"])
+                    try
                     {
-                        Weather weather = new Weather
+                        foreach (var timePeriod in fullWeather["list"])
                         {
-                            Date = Convert.ToDateTime(fullWeather["dt"]),
-                            Temp = (double)fullWeather["dt"]["temp"],
-                            WindSpeed = (double)fullWeather["wind"]["speed"],
-                            Clouds = (string)fullWeather["clouds"]["all"]
-                        };
-                        weatherForecast.Add(weather);
+                            Weather weather = new Weather
+                            {
+                                Date = Utils.Utils.UnixTimeStampToDateTime((double)timePeriod["dt"]),
+                                Temp = (double)timePeriod["main"]["temp"],
+                                WindSpeed = (double)timePeriod["wind"]["speed"],
+                                Clouds = (string)timePeriod["clouds"]["all"]
+                            };
+                            weatherForecast.Add(weather);
+                        }
+                        return Ok(weatherForecast);
                     }
-                    return Ok(weatherForecast);
+                    catch
+                    {
+                        return NoContent();
+                    }
                 }
                 catch (HttpRequestException httpRequestException)
                 {
